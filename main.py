@@ -17,9 +17,6 @@ for i in range(height):
     pos1 = strs.find('1')
     if pos1 != -1:
         shack1 = [pos1, i]
-text = 'abcdefg'
-text = text[:2] + 'Z' + text[3:]
-print(f"{text}", file=sys.stderr, flush=True)
 
 class Troll (object):
     def __init__(self, _id, player, x, y, movement_speed, carry_capacity, harvest_power, chop_power, carry_plum, carry_lemon, carry_apple, carry_banana, carry_iron, carry_wood):
@@ -37,7 +34,7 @@ class Troll (object):
         self.iron = carry_iron
         self.wood = carry_wood
         self.invent = self.lemon + self.plum + self.apple + self.banana + self.iron + self.wood
-        self.action = 'NONE' #action list NONE, goTree, goBase, chopTree
+        self.action = 'NONE' #action list NONE, goTree, goBase, chopTree, goPlant, plant, pick
         self.objectif = [0,0]
         self.stuck = False
         harvest = 0
@@ -50,8 +47,9 @@ class Troll (object):
                     plant += 1
         if harvest > 0 and plant == 0:
             self.job = 'PLANT' #list: 'HARVEST' 'PLANT'
+            print(f"{self.job}", file=sys.stderr, flush=True)
         else:
-            self.job = 'HARVEST' #list: 'HARVEST' 'PLANT'
+            self.job = 'HARVEST'
 
     def updateInfo(self, _id, player, x, y, movement_speed, carry_capacity, harvest_power, chop_power, carry_plum, carry_lemon, carry_apple, carry_banana, carry_iron, carry_wood):
         self.speed = movement_speed
@@ -136,6 +134,7 @@ def plant(troll):
         troll.apple += 1
     if score[0].banana > 0:
         troll.banana += 1
+    troll.action = 'pick'
 
 
 
@@ -147,6 +146,21 @@ def treeAvailable(tree):
     return True
 
 
+def goBase(troll : Troll):
+    troll.action = 'goBase'
+    troll.objectif[0] = shack0[0]
+    troll.objectif[1] = shack0[1]
+    if abs(troll.objectif[0] - troll.position[0]) > abs(troll.position[1] - troll.objectif[1]):
+
+        if troll.objectif[0] - troll.position[0] > 0:
+            troll.objectif[0] = troll.objectif[0] - 1
+        else :
+            troll.objectif[0] = troll.objectif[0] + 1
+    else:
+        if troll.objectif[1] - troll.position[1] > 0:
+            troll.objectif[1] = troll.objectif[1] - 1
+        else :
+            troll.objectif[1] = troll.objectif[1] + 1
 
 def setNewobj(troll : Troll):
     if troll.job == 'PLANT':
@@ -154,8 +168,7 @@ def setNewobj(troll : Troll):
     if troll.job == 'PLANT':
         return
     if troll.invent != 0:
-        troll.action = 'goBase'
-        troll.objectif = shack0
+       goBase(troll)
     else:
         dist = sys.maxsize
         newPos = [0,0]
@@ -167,39 +180,46 @@ def setNewobj(troll : Troll):
                 newPos = i.position
         troll.objectif = newPos
 
-    
+
 def chopTreeft(troll : Troll):
     tree = 0
     for i in treeList:
         if troll.position == i.position:
             tree = i
             if troll.bagCap == troll.invent or i.fruits == 0:
-                troll.action = 'goBase'
-                troll.objectif[0] = shack0[0]
-                troll.objectif[1] = shack0[1]
-                if abs(troll.objectif[0] - troll.position[0]) > abs(troll.position[1] - troll.objectif[1]):
-
-                    if troll.objectif[0] - troll.position[0] > 0:
-                        troll.objectif[0] = troll.objectif[0] - 1
-                    else :
-                        troll.objectif[0] = troll.objectif[0] + 1
-                else:
-                    if troll.objectif[1] - troll.position[1] > 0:
-                        troll.objectif[1] = troll.objectif[1] - 1
-                    else :
-                        troll.objectif[1] = troll.objectif[1] + 1
+                goBase(troll)
             break
+
+def selectType(troll: Troll):
+    if troll.plum != 0:
+        return ' PLUM;'
+    elif troll.lemon != 0:
+        return ' LEMON;'
+    elif troll.apple != 0:
+        return ' APPLE;'
+    elif troll.banana != 0:
+        return ' BANANA;'
+    return ''
+
 
 def printMove(troll: Troll):
     action = 'None'
     printmsg = ''
     id = str(troll.id)
-    if troll.action == 'goTree' or troll.action == 'goBase':
+    if troll.action == 'goTree' or troll.action == 'goBase' or troll.action == 'goPlant':
         printmsg = ' MOVE' + ' ' + id + ' ' + str(troll.objectif[0]) + ' ' + str(troll.objectif[1]) + ';'
     if troll.action == 'chopTree':
         printmsg = ' HARVEST' + ' ' + id + ';'
     if troll.action == 'dropBase':
         printmsg = ' DROP' + ' ' + id + ';'
+    if troll.action == 'dropBase':
+        printmsg = ' DROP' + ' ' + id + ';'
+    if troll.action == 'plant':
+        printmsg = ' PLANT' + ' ' + id
+        printmsg += selectType(troll)
+    if troll.action == 'pick':
+        printmsg = ' PICK ' + id
+        printmsg += selectType(troll)
 
     return(printmsg)
 
@@ -234,13 +254,13 @@ def trainCondition(turn,score):
 # game loop
 turn = 0
 while True:
-    plantNextTreee()
     printmsg = ''
     treeList.clear()
     for i in range(2):
         plum, lemon, apple, banana, iron, wood = [int(j) for j in input().split()]
         score[i] = Score(plum, lemon, apple, banana, iron, wood)
     trees_count = int(input())
+    print(f"{trees_count}", file=sys.stderr, flush=True)
     for i in range(trees_count):
         inputs = input().split()
         newTree = Tree(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5], inputs[6])
@@ -255,11 +275,18 @@ while True:
 
     for i in troll_dict:
         if troll_dict[i].player == 0:
+            if troll_dict[i].action == 'pick':
+                troll_dict[i].action = 'goPlant'
+            if troll_dict[i].action == 'plant':
+                goBase(troll_dict[i])
             if troll_dict[i].action == 'NONE' or troll_dict[i].action == 'dropBase':
                 setNewobj(troll_dict[i])
             elif troll_dict[i].action == 'goTree':
                 if troll_dict[i].position[0] == troll_dict[i].objectif[0] and troll_dict[i].position[1] == troll_dict[i].objectif[1]:
                     troll_dict[i].action = 'chopTree'
+            elif troll_dict[i].action == 'goPlant':
+                if troll_dict[i].position[0] == troll_dict[i].objectif[0] and troll_dict[i].position[1] == troll_dict[i].objectif[1]:
+                    troll_dict[i].action = 'plant'
             elif troll_dict[i].action == 'chopTree':
                 chopTreeft(troll_dict[i])
             elif troll_dict[i].action == 'goBase':
