@@ -74,7 +74,14 @@ class Tree (object):
         self.type = type
         self.position = [int(x), int(y)]
         text = map[self.position[1]]
-        text = text[:self.position[0]] + 't' + text[self.position[0] + 1:]
+        if type == 'PLUM':
+            text = text[:self.position[0]] + 'p' + text[self.position[0] + 1:]
+        if type == 'LEMON':
+            text = text[:self.position[0]] + 'l' + text[self.position[0] + 1:]
+        if type == 'APPLE':
+            text = text[:self.position[0]] + 'a' + text[self.position[0] + 1:]
+        if type == 'BANANA':
+            text = text[:self.position[0]] + 'b' + text[self.position[0] + 1:]
         map[self.position[1]] = text
         self.size = int(size)
         self.health = int(health)
@@ -90,35 +97,93 @@ class Score (object):
         self.iron = int(iron)
         self.wood = int(wood)
 
+    def get(self, string):
+        if string == 'plum':
+            return self.plum
+        if string == 'lemon':
+            return self.lemon
+        if string == 'apple':
+            return self.apple
+        if string == 'banana':
+            return self.banana
+        if string == 'iron':
+            return self.iron
+        if string == 'wood':
+            return self.wood
+
 score = [Score(0, 0, 0, 0, 0, 0),Score(0, 0, 0, 0, 0, 0)]
 
 
 def plantNextTree():
     newPos = shack0.copy()
-    print(f"{newPos[1]}, {height}", file=sys.stderr, flush=True)
-    newPos[0] += 1
-    if newPos[0] < width and map[newPos[1]][newPos[0]] == '.':
-        print(f"east", file=sys.stderr, flush=True)
-        return newPos
-    newPos[0] -= 2
-    if newPos[0] < width and map[newPos[1]][newPos[0]] == '.':
-        print(f"west", file=sys.stderr, flush=True)
-        return newPos
+    coordList = [
+        [newPos[0] + 1, newPos[1]],
+        [newPos[0] - 1, newPos[1]],
+        [newPos[0], newPos[1] + 1],
+        [newPos[0], newPos[1] - 1],
+        [newPos[0] + 1, newPos[1] + 1],
+        [newPos[0] + 1, newPos[1] - 1],
+        [newPos[0] -1, newPos[1] + 1],
+        [newPos[0] -1, newPos[1] - 1],
+        ]
+    for pos in coordList:
 
-
-    newPos[0] += 1
-    newPos[1] += 1
-    if newPos[1] < height and map[newPos[1]][newPos[0]] == '.':
-        print(f"south", file=sys.stderr, flush=True)
-        return newPos
-
-
-    newPos[1] -= 2
-    if newPos[1] < height and map[newPos[1]][newPos[0]] == '.':
-        print(f"north", file=sys.stderr, flush=True)
-        return newPos
+        x = pos[0]
+        y = pos[1]
+        if x < width and x >= 0 and y < height and y >= 0 and map[y][x] == '.':
+            return pos
     return [-1,-1]
 
+def selectTypePlant():
+    plum = 0
+    lemon = 0
+    apple = 0
+    banana = 0
+    newPos = shack0.copy()
+    coordList = [
+        [newPos[0] + 1, newPos[1]],
+        [newPos[0] - 1, newPos[1]],
+        [newPos[0], newPos[1] + 1],
+        [newPos[0], newPos[1] - 1],
+        [newPos[0] + 1, newPos[1] + 1],
+        [newPos[0] + 1, newPos[1] - 1],
+        [newPos[0] + 0, newPos[1] + 1],
+        [newPos[0] + 0, newPos[1] - 1],
+        ]
+
+    for pos in coordList:
+        x = pos[0]
+        y = pos[1]
+        if x < width or x >= 0 or y < height or y >= 0:
+            continue
+        if map[y][x] == 'p':
+            plum += 1
+        elif map[y][x] == 'l':
+            lemon += 1
+        elif map[y][x] == 'a':
+            apple += 1
+        elif map[y][x] == 'b':
+            banana += 1
+
+    fruits = {
+        'plum': plum,
+        'lemon': lemon,
+        'apple': apple,
+        'banana': banana
+    }
+
+    minimum = min(fruits.values())
+    lowest_fruits = []
+    for fruit, value in fruits.items():
+        if value == minimum:
+            lowest_fruits.append(fruit)
+    fruits = {}
+    for i in lowest_fruits:
+        fruits[i] = score[0].get(i)
+    lowest = min(fruits, key=fruits.get)
+    print(f"{lowest}", file=sys.stderr, flush=True)
+    return lowest
+    
 
 def plant(troll):
     objectif = plantNextTree()
@@ -126,13 +191,16 @@ def plant(troll):
         troll.job = 'HARVEST'
         return
     troll.objectif = objectif
-    if score[0].plum > 0:
+    type = selectTypePlant()
+    if type == 'plum':
         troll.plum += 1
-    if score[0].lemon > 0:
+        if score[0].get(type) == 0:
+            troll.action = 'search'
+    if type == 'lemon':
         troll.lemon += 1
-    if score[0].apple > 0:
+    if type == 'apple':
         troll.apple += 1
-    if score[0].banana > 0:
+    if type == 'banana':
         troll.banana += 1
     troll.action = 'pick'
 
