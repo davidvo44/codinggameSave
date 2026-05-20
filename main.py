@@ -181,9 +181,23 @@ def selectTypePlant():
     for i in lowest_fruits:
         fruits[i] = score[0].get(i)
     lowest = min(fruits, key=fruits.get)
-    print(f"{lowest}", file=sys.stderr, flush=True)
     return lowest
-    
+
+def searchTree(troll, ftype):
+    fruitsType = {
+        'plum': 'PLUM',
+        'lemon': 'LEMON',
+        'apple': 'APPLE',
+        'banana': 'BANANA'
+    }
+    dist = sys.maxsize
+    newPos = [0,0]
+    for i in treeList:
+        newDist = math.dist(troll.position, i.position)
+        if i.type == fruitsType[ftype] and dist > newDist and treeAvailable(i):
+            dist = newDist
+            newPos = i.position
+    troll.objectif = newPos  
 
 def plant(troll):
     objectif = plantNextTree()
@@ -192,10 +206,12 @@ def plant(troll):
         return
     troll.objectif = objectif
     type = selectTypePlant()
+    if score[0].get(type) == 0:
+        troll.action = 'search'
+        searchTree(troll, type)
+        return
     if type == 'plum':
         troll.plum += 1
-        if score[0].get(type) == 0:
-            troll.action = 'search'
     if type == 'lemon':
         troll.lemon += 1
     if type == 'apple':
@@ -204,7 +220,7 @@ def plant(troll):
         troll.banana += 1
     troll.action = 'pick'
 
-
+    
 
 def treeAvailable(tree):
     for i in troll_dict:
@@ -229,6 +245,8 @@ def goBase(troll : Troll):
             troll.objectif[1] = troll.objectif[1] - 1
         else :
             troll.objectif[1] = troll.objectif[1] + 1
+
+
 
 def setNewobj(troll : Troll):
     if troll.job == 'PLANT':
@@ -258,6 +276,7 @@ def chopTreeft(troll : Troll):
                 goBase(troll)
             break
 
+
 def selectType(troll: Troll):
     if troll.plum != 0:
         return ' PLUM;'
@@ -274,9 +293,9 @@ def printMove(troll: Troll):
     action = 'None'
     printmsg = ''
     id = str(troll.id)
-    if troll.action == 'goTree' or troll.action == 'goBase' or troll.action == 'goPlant':
+    if troll.action == 'goTree' or troll.action == 'goBase' or troll.action == 'goPlant' or troll.action == 'search':
         printmsg = ' MOVE' + ' ' + id + ' ' + str(troll.objectif[0]) + ' ' + str(troll.objectif[1]) + ';'
-    if troll.action == 'chopTree':
+    if troll.action == 'chopTree' or troll.action == 'searchChop':
         printmsg = ' HARVEST' + ' ' + id + ';'
     if troll.action == 'dropBase':
         printmsg = ' DROP' + ' ' + id + ';'
@@ -288,7 +307,6 @@ def printMove(troll: Troll):
     if troll.action == 'pick':
         printmsg = ' PICK ' + id
         printmsg += selectType(troll)
-
     return(printmsg)
 
 def trainCondition(turn,score):
@@ -317,7 +335,11 @@ def trainCondition(turn,score):
     return printmsg
 
 
-
+def searchChop(troll):
+    print(f'HEY {troll.action}', file=sys.stderr, flush=True)
+    if troll.position[0] == troll.objectif[0] and troll.position[1] == troll.objectif[1]:
+        troll.action = 'searchChop'
+    
 
 # game loop
 turn = 0
@@ -345,9 +367,14 @@ while True:
         if troll_dict[i].player == 0:
             if troll_dict[i].action == 'pick':
                 troll_dict[i].action = 'goPlant'
-            if troll_dict[i].action == 'plant':
+            elif troll_dict[i].action == 'plant':
                 goBase(troll_dict[i])
-            if troll_dict[i].action == 'NONE' or troll_dict[i].action == 'dropBase':
+            elif troll_dict[i].action == 'search':
+                searchChop(troll_dict[i])
+            elif troll_dict[i].action == 'searchChop':
+                troll_dict[i].action = 'goPlant'
+                troll_dict[i].objectif =  plantNextTree()
+            elif troll_dict[i].action == 'NONE' or troll_dict[i].action == 'dropBase':
                 setNewobj(troll_dict[i])
             elif troll_dict[i].action == 'goTree':
                 if troll_dict[i].position[0] == troll_dict[i].objectif[0] and troll_dict[i].position[1] == troll_dict[i].objectif[1]:
