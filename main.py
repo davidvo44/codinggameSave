@@ -37,6 +37,7 @@ class Troll (object):
         self.action = 'NONE' #action list NONE, goTree, goBase, chopTree, goPlant, plant, pick
         self.objectif = [0,0]
         self.stuck = False
+        self.mvtList = [[0,0]]
         harvest = 0
         plant = 0
         for i in troll_dict:
@@ -194,13 +195,14 @@ def searchTree(troll, ftype):
     newPos = [0,0]
     for i in treeList:
         newDist = math.dist(troll.position, i.position)
-        if i.type == fruitsType[ftype] and dist > newDist and treeAvailable(i):
+        if i.type == fruitsType[ftype] and i.size >= 4 and dist > newDist and treeAvailable(i):
             dist = newDist
             newPos = i.position
     troll.objectif = newPos  
 
 def plant(troll):
     objectif = plantNextTree()
+    print(f"{objectif}", file=sys.stderr, flush=True)
     if objectif[0] == -1:
         troll.job = 'HARVEST'
         return
@@ -330,7 +332,6 @@ def trainCondition(turn,score):
         mvt = 1
         carry = 1
         pwr = 1
-        print(f"{mvt}  {carry} {pwr}", file=sys.stderr, flush=True)
         printmsg = ' TRAIN ' + str(mvt) + ' ' + str(carry) + ' ' + str(pwr) + ' ' + '0'
     return printmsg
 
@@ -386,13 +387,14 @@ while True:
                 chopTreeft(troll_dict[i])
             elif troll_dict[i].action == 'goBase':
                 if troll_dict[i].position[0] == troll_dict[i].objectif[0] and troll_dict[i].position[1] == troll_dict[i].objectif[1]:
-                    troll_dict[i].action = 'dropBase'
+                    if troll_dict[i].job == 'PLANT':
+                        plant(troll_dict[i])
+                    else:
+                        troll_dict[i].action = 'dropBase'
             printmsg = printmsg + printMove(troll_dict[i])
     printmsg = printmsg + trainCondition(turn, score[0])
     print (printmsg)
     turn = turn + 1
-
-
 
 
     # Write an action using print
